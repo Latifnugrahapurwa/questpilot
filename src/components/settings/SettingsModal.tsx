@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Eye, EyeOff, Settings, X } from "lucide-react";
 import { clearKeys, loadKeys, saveKeys, type ApiKeys } from "@/lib/keys";
 
@@ -15,6 +16,9 @@ export default function SettingsModal() {
   const [keys, setKeys] = useState<ApiKeys>({ gemini: "", rawg: "", serper: "", model: "" });
   const [show, setShow] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (open) {
@@ -34,8 +38,8 @@ export default function SettingsModal() {
         <Settings className="h-5 w-5" />
       </button>
 
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 pt-16" onClick={() => setOpen(false)}>
+      {open && mounted && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/70 p-4 pt-16" onClick={() => setOpen(false)}>
           <div className="w-full max-w-lg rounded-xl border border-zinc-800 bg-zinc-900 p-5" onClick={(e) => e.stopPropagation()}>
             <div className="mb-1 flex items-center justify-between">
               <h2 className="font-semibold">Pengaturan API</h2>
@@ -108,7 +112,8 @@ export default function SettingsModal() {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );
