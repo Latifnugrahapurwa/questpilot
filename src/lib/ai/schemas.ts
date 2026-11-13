@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+// Array size limits are described in text (and clamped in the route) instead of using
+// minItems/maxItems, because some providers' structured-output modes reject those keywords.
 export const workspaceConfigSchema = z.object({
   persona: z.string().describe("One-paragraph persona/tone for the AI guide, tailored to this game's genre."),
   progress_fields: z
@@ -10,9 +12,7 @@ export const workspaceConfigSchema = z.object({
         placeholder: z.string(),
       }),
     )
-    .min(2)
-    .max(5)
-    .describe("Genre-appropriate progress trackers (e.g. Chapter, Day, Level, Build, Rank)."),
+    .describe("2 to 5 genre-appropriate progress trackers (e.g. Chapter, Day, Level, Build, Rank)."),
   quick_actions: z
     .array(
       z.object({
@@ -23,10 +23,8 @@ export const workspaceConfigSchema = z.object({
           .describe("Icon name"),
       }),
     )
-    .length(4),
+    .describe("Exactly 4 quick actions."),
   starter_checklist: z
     .array(z.object({ text: z.string() }))
-    .min(4)
-    .max(8)
-    .describe("Spoiler-free starter goals/habits for a new player."),
+    .describe("4 to 8 spoiler-free starter goals/habits for a new player."),
 });

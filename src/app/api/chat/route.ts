@@ -1,7 +1,7 @@
-import { convertToModelMessages, stepCountIs, streamText, tool, type UIMessage } from "ai";
+import { convertToModelMessages, stepCountIs, streamText, tool, type LanguageModel, type UIMessage } from "ai";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { getGeminiKey, getModel, getSerperKey } from "@/lib/ai/model";
+import { aiConfigError, getAiConfig, getModel, getSerperKey } from "@/lib/ai/model";
 import { buildCompanionSystemPrompt } from "@/lib/ai/prompts";
 import type { Game, StoredToolInvocation, VisualImage } from "@/lib/types";
 
@@ -38,9 +38,9 @@ const textOf = (m?: UIMessage) =>
   (m?.parts ?? []).map((p) => (p.type === "text" ? p.text : "")).join("");
 
 export async function POST(req: Request) {
-  if (!getGeminiKey(req)) {
-    return new Response("Gemini API key belum diisi. Buka Pengaturan (ikon gear) di navbar.", { status: 400 });
-  }
+  const cfgError = aiConfigError(getAiConfig(req));
+  if (cfgError) return new Response(cfgError, { status: 400 });
+
   const { messages, gameId } = (await req.json()) as { messages: UIMessage[]; gameId: string };
   const supabase = await createClient();
 
@@ -56,7 +56,12 @@ export async function POST(req: Request) {
   // Send only text parts of history to the model (tool outputs are re-fetched when needed).
   const clean = messages.map((m) => ({ ...m, parts: m.parts.filter((p) => p.type === "text") }));
 
-  const model = await getModel(req);
+  let model: LanguageModel;
+  try {
+    model = await getModel(req);
+  } catch (e) {
+    return new Response(e instanceof Error ? e.message : "Model tidak bisa dimuat", { status: 400 });
+  }
 
   const result = streamText({
     model,

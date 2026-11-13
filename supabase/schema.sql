@@ -1,4 +1,4 @@
--- QuestPilot schema. Run in Supabase SQL Editor.
+-- QuestPilot schema. Run the whole file in Supabase SQL Editor (safe to re-run).
 create extension if not exists "pgcrypto";
 
 create table if not exists public.games (
@@ -24,7 +24,20 @@ create table if not exists public.messages (
 create index if not exists messages_game_id_created_idx
   on public.messages (game_id, created_at);
 
--- Single-user personal deployment: RLS disabled so it works out of the box.
--- WARNING: anyone with your anon key can read/write. Enable auth + RLS before sharing publicly.
-alter table public.games disable row level security;
-alter table public.messages disable row level security;
+-- Single-user personal deployment: fully open access for the anon key.
+-- Explicit policies + grants work whether or not Supabase auto-enabled RLS on new tables.
+-- WARNING: anyone with your anon key can read/write. Add auth + per-user policies before sharing publicly.
+alter table public.games enable row level security;
+alter table public.messages enable row level security;
+
+drop policy if exists "open access games" on public.games;
+create policy "open access games" on public.games
+  for all to anon, authenticated using (true) with check (true);
+
+drop policy if exists "open access messages" on public.messages;
+create policy "open access messages" on public.messages
+  for all to anon, authenticated using (true) with check (true);
+
+grant usage on schema public to anon, authenticated;
+grant select, insert, update, delete on public.games to anon, authenticated;
+grant select, insert, update, delete on public.messages to anon, authenticated;

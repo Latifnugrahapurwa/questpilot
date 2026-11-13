@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { generateObject } from "ai";
 import { createClient } from "@/lib/supabase/server";
-import { getGeminiKey, getModel, getRawgKey } from "@/lib/ai/model";
+import { aiConfigError, getAiConfig, getModel, getRawgKey } from "@/lib/ai/model";
 import { workspaceConfigSchema } from "@/lib/ai/schemas";
 import { WORKSPACE_GENERATION_SYSTEM } from "@/lib/ai/prompts";
 import { slugify } from "@/lib/utils";
@@ -38,9 +38,8 @@ export async function POST(req: Request) {
   try {
     const { title, rawgId, cover } = (await req.json()) as { title?: string; rawgId?: number; cover?: string };
     if (!title?.trim()) return NextResponse.json({ error: "Title required" }, { status: 400 });
-    if (!getGeminiKey(req)) {
-      return NextResponse.json({ error: "Gemini API key belum diisi. Buka Pengaturan (ikon gear) di navbar." }, { status: 400 });
-    }
+    const cfgError = aiConfigError(getAiConfig(req));
+    if (cfgError) return NextResponse.json({ error: cfgError }, { status: 400 });
 
     const supabase = await createClient();
     const info = await fetchRawg(getRawgKey(req), title.trim(), rawgId);
@@ -58,9 +57,9 @@ export async function POST(req: Request) {
 
     const config: WorkspaceConfig = {
       persona: object.persona,
-      progress_fields: object.progress_fields.map((f) => ({ ...f, value: "" })),
-      quick_actions: object.quick_actions,
-      starter_checklist: object.starter_checklist.map((c, i) => ({ id: `c${i + 1}`, text: c.text, completed: false })),
+      progress_fields: object.progress_fields.slice(0, 5).map((f) => ({ ...f, value: "" })),
+      quick_actions: object.quick_actions.slice(0, 4),
+      starter_checklist: object.starter_checklist.slice(0, 8).map((c, i) => ({ id: `c${i + 1}`, text: c.text, completed: false })),
     };
 
     const { error } = await supabase.from("games").insert({
