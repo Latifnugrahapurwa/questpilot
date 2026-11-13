@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { aiConfigError, getAiConfig, getModel, getSerperKey } from "@/lib/ai/model";
 import { buildCompanionSystemPrompt } from "@/lib/ai/prompts";
+import { getLanguageInstruction } from "@/lib/i18n/server";
 import type { Game, StoredToolInvocation, VisualImage } from "@/lib/types";
 
 export const maxDuration = 60;
@@ -34,8 +35,13 @@ const makeSearchGameVisuals = (serperKey: string) => tool({
   },
 });
 
+type Part = UIMessage["parts"][number];
+
 const textOf = (m?: UIMessage) =>
   (m?.parts ?? []).map((p) => (p.type === "text" ? p.text : "")).join("");
+
+const isImagePart = (p: Part) =>
+  p.type === "file" && typeof p.mediaType === "string" && p.mediaType.startsWith("image/");
 
 export async function POST(req: Request) {
   const cfgError = aiConfigError(getAiConfig(req));
@@ -50,11 +56,25 @@ export async function POST(req: Request) {
 
   const last = messages[messages.length - 1];
   if (last?.role === "user") {
-    await supabase.from("messages").insert({ game_id: gameId, role: "user", content: textOf(last) });
+    // Gambar tidak disimpan ke database (terlalu besar); hanya teks + catatan jumlah gambar.
+    const imageCount = last.parts.filter(isImagePart).length;
+    const content = textOf(last) + (imageCount ? `\n\n📎 ${imageCount} image${imageCount > 1 ? "s" : ""}` : "");
+    const { error: userInsertError } = await supabase
+      .from("messages")
+      .insert({ game_id: gameId, role: "user", content });
+    if (userInsertError) console.error("[chat] failed to save user message:", userInsertError.message);
   }
 
-  // Send only text parts of history to the model (tool outputs are re-fetched when needed).
-  const clean = messages.map((m) => ({ ...m, parts: m.parts.filter((p) => p.type === "text") }));
+  // Kirim teks dari semua pesan ke model. Gambar hanya disertakan dari 2 pesan user terakhir
+  // yang berisi gambar (supaya request tetap ringan). Output tool dicari ulang bila perlu.
+  const imageMessageIdx = messages
+    .map((m, i) => (m.role === "user" && m.parts.some(isImagePart) ? i : -1))
+    .filter((i) => i >= 0);
+  const keepImagesFor = new Set(imageMessageIdx.slice(-2));
+  const clean = messages.map((m, i) => ({
+    ...m,
+    parts: m.parts.filter((p) => p.type === "text" || (keepImagesFor.has(i) && isImagePart(p))),
+  }));
 
   let model: LanguageModel;
   try {
@@ -63,9 +83,11 @@ export async function POST(req: Request) {
     return new Response(e instanceof Error ? e.message : "Model tidak bisa dimuat", { status: 400 });
   }
 
+  const langInstruction = await getLanguageInstruction();
+
   const result = streamText({
     model,
-    system: buildCompanionSystemPrompt(game.title, game.genres, game.workspace_config),
+    system: buildCompanionSystemPrompt(game.title, game.genres, game.workspace_config) + langInstruction,
     messages: await convertToModelMessages(clean),
     tools: { searchGameVisuals: makeSearchGameVisuals(getSerperKey(req)) },
     stopWhen: stepCountIs(4),
@@ -75,12 +97,13 @@ export async function POST(req: Request) {
         .filter((r) => r.toolName === "searchGameVisuals")
         .map((r) => r.output as StoredToolInvocation)
         .filter((o) => o?.images?.length);
-      await supabase.from("messages").insert({
+      const { error: assistantInsertError } = await supabase.from("messages").insert({
         game_id: gameId,
         role: "assistant",
         content: text,
         tool_invocations: invocations.length ? invocations : null,
       });
+      if (assistantInsertError) console.error("[chat] failed to save assistant message:", assistantInsertError.message);
     },
   });
 
