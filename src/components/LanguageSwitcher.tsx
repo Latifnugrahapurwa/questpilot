@@ -7,7 +7,7 @@ export default function LanguageSwitcher() {
 
   return (
     <div
-      className="inline-flex items-center rounded-full border border-zinc-700/70 bg-zinc-900/70 p-0.5 text-xs font-semibold shadow-inner"
+      className="inline-flex items-center rounded-md border border-zinc-800 bg-zinc-900 p-0.5 text-xs font-semibold"
       role="group"
       aria-label="Language"
     >
@@ -19,9 +19,9 @@ export default function LanguageSwitcher() {
             type="button"
             onClick={() => setLang(l)}
             aria-pressed={active}
-            className={`rounded-full px-3 py-1 transition-all duration-200 ${
+            className={`rounded px-2.5 py-1 transition-colors ${
               active
-                ? "bg-amber-400 text-zinc-950 shadow"
+                ? "bg-amber-400 text-zinc-950"
                 : "text-zinc-400 hover:text-zinc-100"
             }`}
           >
