@@ -1,19 +1,19 @@
 import { convertToModelMessages, stepCountIs, streamText, tool, type UIMessage } from "ai";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { getModel } from "@/lib/ai/model";
+import { getGeminiKey, getModel, getSerperKey } from "@/lib/ai/model";
 import { buildCompanionSystemPrompt } from "@/lib/ai/prompts";
 import type { Game, StoredToolInvocation, VisualImage } from "@/lib/types";
 
 export const maxDuration = 60;
 
-const searchGameVisuals = tool({
+const makeSearchGameVisuals = (serperKey: string) => tool({
   description:
     "Search the web for real game screenshots, maps, item locations, or layouts. Use only when a visual clarifies spatial or appearance questions. Include the game name in the query.",
   inputSchema: z.object({ query: z.string().describe("Specific image search query including the game title") }),
   execute: async ({ query }): Promise<{ query: string; images: VisualImage[]; error?: string }> => {
-    const key = process.env.SERPER_API_KEY;
-    if (!key) return { query, images: [], error: "SERPER_API_KEY is not configured" };
+    const key = serperKey;
+    if (!key) return { query, images: [], error: "Serper API key belum diisi (Pengaturan)" };
     try {
       const res = await fetch("https://google.serper.dev/images", {
         method: "POST",
@@ -38,6 +38,9 @@ const textOf = (m?: UIMessage) =>
   (m?.parts ?? []).map((p) => (p.type === "text" ? p.text : "")).join("");
 
 export async function POST(req: Request) {
+  if (!getGeminiKey(req)) {
+    return new Response("Gemini API key belum diisi. Buka Pengaturan (ikon gear) di navbar.", { status: 400 });
+  }
   const { messages, gameId } = (await req.json()) as { messages: UIMessage[]; gameId: string };
   const supabase = await createClient();
 
@@ -54,10 +57,10 @@ export async function POST(req: Request) {
   const clean = messages.map((m) => ({ ...m, parts: m.parts.filter((p) => p.type === "text") }));
 
   const result = streamText({
-    model: getModel(),
+    model: getModel(req),
     system: buildCompanionSystemPrompt(game.title, game.genres, game.workspace_config),
     messages: await convertToModelMessages(clean),
-    tools: { searchGameVisuals },
+    tools: { searchGameVisuals: makeSearchGameVisuals(getSerperKey(req)) },
     stopWhen: stepCountIs(4),
     onFinish: async ({ text, steps }) => {
       const invocations: StoredToolInvocation[] = steps

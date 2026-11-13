@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Compass } from "lucide-react";
+import SettingsModal from "@/components/settings/SettingsModal";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,7 +19,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Compass className="h-5 w-5 text-amber-400" />
               Quest<span className="text-amber-400">Pilot</span>
             </Link>
-            <span className="text-xs text-zinc-500">Anti-spoiler AI companion</span>
+            <div className="flex items-center gap-3">
+              <span className="hidden text-xs text-zinc-500 sm:inline">Anti-spoiler AI companion</span>
+              <SettingsModal />
+            </div>
           </div>
         </nav>
         <main className="mx-auto max-w-7xl px-4 py-6">{children}</main>

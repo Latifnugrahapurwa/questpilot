@@ -7,6 +7,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Loader2, Send } from "lucide-react";
 import type { QuickAction, StoredToolInvocation } from "@/lib/types";
+import { keyHeaders } from "@/lib/keys";
 import QuickActionsBar from "./QuickActionsBar";
 import MermaidBlock from "./MermaidBlock";
 import VisualImageGrid from "./VisualImageGrid";
@@ -46,7 +47,7 @@ function Markdown({ text }: { text: string }) {
 }
 
 export default function ChatInterface({ gameId, gameTitle, quickActions, initialMessages }: Props) {
-  const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat", body: { gameId } }), [gameId]);
+  const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat", body: { gameId }, headers: () => keyHeaders() }), [gameId]);
   const { messages, sendMessage, status, error } = useChat({ transport, messages: initialMessages });
   const [input, setInput] = useState("");
   const endRef = useRef<HTMLDivElement>(null);

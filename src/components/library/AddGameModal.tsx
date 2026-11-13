@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Plus, Search, X } from "lucide-react";
 import type { RawgSearchResult } from "@/lib/types";
+import { keyHeaders } from "@/lib/keys";
 
 export default function AddGameModal() {
   const router = useRouter();
@@ -22,9 +23,10 @@ export default function AddGameModal() {
     const t = setTimeout(async () => {
       setSearching(true);
       try {
-        const res = await fetch(`/api/games/search?q=${encodeURIComponent(query)}`);
+        const res = await fetch(`/api/games/search?q=${encodeURIComponent(query)}`, { headers: keyHeaders() });
         const json = await res.json();
         setResults(json.results ?? []);
+        setError(json.error ?? null);
       } finally {
         setSearching(false);
       }
@@ -38,7 +40,7 @@ export default function AddGameModal() {
     try {
       const res = await fetch("/api/games/create", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...keyHeaders() },
         body: JSON.stringify({ title, rawgId }),
       });
       const json = await res.json();
