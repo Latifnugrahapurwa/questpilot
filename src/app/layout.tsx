@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { LanguageProvider } from "@/lib/i18n/LanguageProvider";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
+import AppHeader from "@/components/AppHeader";
+
+const inter = Inter({ subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
   title: "QuestPilot — AI Gaming Companion",
@@ -16,12 +19,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-zinc-950 text-zinc-100 antialiased">
+      <body
+        className={`${inter.className} min-h-screen bg-zinc-950 bg-[radial-gradient(ellipse_at_top,rgba(245,158,11,0.10),transparent_55%)] text-zinc-100 antialiased`}
+      >
         <LanguageProvider>
-          <div className="fixed top-3 right-3 z-50">
-            <LanguageSwitcher />
-          </div>
-          {children}
+          <AppHeader />
+          <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6">
+            {children}
+          </main>
         </LanguageProvider>
       </body>
     </html>
