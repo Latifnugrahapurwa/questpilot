@@ -56,8 +56,10 @@ export async function POST(req: Request) {
   // Send only text parts of history to the model (tool outputs are re-fetched when needed).
   const clean = messages.map((m) => ({ ...m, parts: m.parts.filter((p) => p.type === "text") }));
 
+  const model = await getModel(req);
+
   const result = streamText({
-    model: getModel(req),
+    model,
     system: buildCompanionSystemPrompt(game.title, game.genres, game.workspace_config),
     messages: await convertToModelMessages(clean),
     tools: { searchGameVisuals: makeSearchGameVisuals(getSerperKey(req)) },

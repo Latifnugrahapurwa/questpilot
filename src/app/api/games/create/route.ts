@@ -36,7 +36,7 @@ async function fetchRawg(key: string, title: string, rawgId?: number): Promise<R
 
 export async function POST(req: Request) {
   try {
-    const { title, rawgId } = (await req.json()) as { title?: string; rawgId?: number };
+    const { title, rawgId, cover } = (await req.json()) as { title?: string; rawgId?: number; cover?: string };
     if (!title?.trim()) return NextResponse.json({ error: "Title required" }, { status: 400 });
     if (!getGeminiKey(req)) {
       return NextResponse.json({ error: "Gemini API key belum diisi. Buka Pengaturan (ikon gear) di navbar." }, { status: 400 });
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
     if (existing) return NextResponse.json({ slug: existing.slug, existed: true });
 
     const { object } = await generateObject({
-      model: getModel(req),
+      model: await getModel(req),
       schema: workspaceConfigSchema,
       system: WORKSPACE_GENERATION_SYSTEM,
       prompt: `Game: ${info.name}\nGenres: ${info.genres.join(", ") || "unknown"}\nDescription: ${info.description || "n/a"}`,
@@ -67,7 +67,7 @@ export async function POST(req: Request) {
       slug,
       title: info.name,
       rawg_id: info.id,
-      cover_image: info.cover,
+      cover_image: info.cover ?? cover ?? null,
       genres: info.genres,
       workspace_config: config,
     });

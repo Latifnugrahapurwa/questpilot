@@ -30,4 +30,5 @@ export type RawgSearchResult = {
   background_image: string | null;
   genres: string[];
   released: string | null;
+  source?: "rawg" | "steam";
 };

@@ -14,6 +14,7 @@ export default function AddGameModal() {
   const [searching, setSearching] = useState(false);
   const [creating, setCreating] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     if (query.trim().length < 2) {
@@ -27,6 +28,7 @@ export default function AddGameModal() {
         const json = await res.json();
         setResults(json.results ?? []);
         setError(json.error ?? null);
+        setNotice(json.notice ?? null);
       } finally {
         setSearching(false);
       }
@@ -34,14 +36,14 @@ export default function AddGameModal() {
     return () => clearTimeout(t);
   }, [query]);
 
-  async function create(title: string, rawgId?: number) {
+  async function create(title: string, rawgId?: number, cover?: string | null) {
     setCreating(title);
     setError(null);
     try {
       const res = await fetch("/api/games/create", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...keyHeaders() },
-        body: JSON.stringify({ title, rawgId }),
+        body: JSON.stringify({ title, rawgId, cover: cover ?? undefined }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to create game");
@@ -86,6 +88,7 @@ export default function AddGameModal() {
               {searching && <Loader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-zinc-500" />}
             </div>
 
+            {notice && <p className="mt-2 text-xs text-amber-300">{notice}</p>}
             {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
 
             <ul className="mt-3 max-h-80 space-y-1 overflow-y-auto">
@@ -93,7 +96,7 @@ export default function AddGameModal() {
                 <li key={r.id}>
                   <button
                     disabled={!!creating}
-                    onClick={() => create(r.name, r.id)}
+                    onClick={() => create(r.name, r.source === "steam" ? undefined : r.id, r.background_image)}
                     className="flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-zinc-800 disabled:opacity-50"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
