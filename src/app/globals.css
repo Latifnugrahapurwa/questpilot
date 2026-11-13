@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: dark; }
+body { @apply bg-zinc-950 text-zinc-100 antialiased; }
+
+.prose-qp { @apply text-sm leading-relaxed text-zinc-200; }
+.prose-qp h1, .prose-qp h2, .prose-qp h3 { @apply mt-4 mb-2 font-semibold text-amber-300; }
+.prose-qp p { @apply my-2; }
+.prose-qp ul { @apply my-2 list-disc pl-5; }
+.prose-qp ol { @apply my-2 list-decimal pl-5; }
+.prose-qp li { @apply my-0.5; }
+.prose-qp a { @apply text-emerald-400 underline; }
+.prose-qp code { @apply rounded bg-zinc-800 px-1 py-0.5 text-xs text-emerald-300; }
+.prose-qp pre { @apply my-2 overflow-x-auto rounded-lg bg-zinc-900 p-3; }
+.prose-qp pre code { @apply bg-transparent p-0; }
+.prose-qp table { @apply my-3 w-full border-collapse text-xs; }
+.prose-qp th { @apply border border-zinc-700 bg-zinc-800 px-2 py-1 text-left text-amber-200; }
+.prose-qp td { @apply border border-zinc-800 px-2 py-1; }
+.prose-qp blockquote { @apply my-2 border-l-2 border-amber-500 pl-3 text-zinc-400; }
