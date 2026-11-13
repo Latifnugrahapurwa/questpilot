@@ -4,6 +4,7 @@ import { Compass } from "lucide-react";
 import SettingsModal from "@/components/settings/SettingsModal";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import NavTagline from "@/components/NavTagline";
+import NavManageLink from "@/components/NavManageLink";
 import { LanguageProvider } from "@/lib/i18n/LanguageProvider";
 import "./globals.css";
 
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </Link>
               <div className="flex items-center gap-3">
                 <NavTagline />
+                <NavManageLink />
                 <LanguageSwitcher />
                 <SettingsModal />
               </div>
